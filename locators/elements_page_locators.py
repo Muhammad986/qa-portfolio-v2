@@ -23,5 +23,14 @@ class ChallengingDomPageLocators:
     CANVAS_RESULT = (By.CSS_SELECTOR, 'canvas[id="canvas"]')
     TABLE_ROWS = (By.CSS_SELECTOR, 'div[class="large-10 columns"] tbody tr')
 
+class CheckboxesPageLocators:
+    CHECKBOXES = (By.CSS_SELECTOR, 'input[type="checkbox"]')
+
 class ContextMenuPageLocators:
     CONTENT_BOX = (By.CSS_SELECTOR, 'div[id="hot-spot"]')
+
+class DigestAuthPageLocators:
+    CONTENT_SUCCESS = (By.CSS_SELECTOR, 'div[id="content"] p')
+
+class DisappearingElementsPageLocators:
+    MENU_ITEMS = (By.CSS_SELECTOR, 'div[id="content"] a')

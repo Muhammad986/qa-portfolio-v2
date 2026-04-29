@@ -1,6 +1,9 @@
-from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, ContextMenuPage, ElementsPage
+from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, CheckboxesPage, ContextMenuPage, DigestAuthPage, DisappearingElementsPage, ElementsPage
 
 import time
+
+import requests
+from requests.auth import HTTPDigestAuth
 class TestElementsPage:
     class TestABTest:
 
@@ -56,6 +59,15 @@ class TestElementsPage:
             )
             assert page.is_canvas_present(), "Expected canvas element to be present on the page"
 
+    class TestCheckboxesPage:
+        def test_checkboxes(self, driver):
+            page = CheckboxesPage(driver, 'https://the-internet.herokuapp.com/checkboxes')
+            page.open()
+            before, after = page.toggle_checkboxes_and_get_states()
+            assert before != after, (
+                f"Expected checkbox states to change after toggle, but before={before}, after={after}"
+            )
+
     class TestContextMenuPage:
         def test_context_menu(self, driver):
             page = ContextMenuPage(driver, 'https://the-internet.herokuapp.com/context_menu')
@@ -64,3 +76,23 @@ class TestElementsPage:
             assert text_alert == 'You selected a context menu', (
             f"Expected alert text to be 'You selected a context menu', but got: '{text_alert}'"
             )
+
+    class TestDigestAuthPage:
+        def test_digest_auth_api(self, driver):
+            page = DigestAuthPage(driver, 'https://the-internet.herokuapp.com/digest_auth')
+            response = page.digest_auth_api(username='admin', password='admin')
+
+            assert response.status_code == 200, (
+                f"Expected status code 200, but got {response.status_code}"
+            )
+            assert "Congratulations" in response.text, (
+                "Expected success message after digest authentication"
+            )
+
+    class TestDisappearingElementsPage:
+        def test_menu_items_may_change_after_refresh(self, driver):
+            page = DisappearingElementsPage(driver, 'https://the-internet.herokuapp.com/disappearing_elements')
+            page.open()
+
+            state = page.disappearing_menu()
+            assert state, 'The menu items will not change after the page is refreshed'

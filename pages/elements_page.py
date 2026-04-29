@@ -1,8 +1,9 @@
 
-
+import requests
+from requests.auth import HTTPDigestAuth
 import random
 
-from locators.elements_page_locators import AddRemoveElementsPageLocators, BasicAuthPageLocators, BrokenImagesPageLocators, ChallengingDomPageLocators, ContextMenuPageLocators, ElementsPageLocators
+from locators.elements_page_locators import AddRemoveElementsPageLocators, BasicAuthPageLocators, BrokenImagesPageLocators, ChallengingDomPageLocators, CheckboxesPageLocators, ContextMenuPageLocators, DigestAuthPageLocators, DisappearingElementsPageLocators, ElementsPageLocators
 from pages.base_page import BasePage
 
 
@@ -85,6 +86,18 @@ class ChallengingDomPage(BasePage):
     def is_canvas_present(self):
         return self.find_is_visible(self.locators.CANVAS_RESULT) is not None
     
+class CheckboxesPage(BasePage):
+    locators = CheckboxesPageLocators()
+
+    def toggle_checkboxes_and_get_states(self):
+        checkboxes = self.find_are_visible(self.locators.CHECKBOXES)
+        states_before = [checkbox.is_selected() for checkbox in checkboxes]
+        for checkbox in checkboxes:
+            checkbox.click()
+        states_after = [checkbox.is_selected() for checkbox in checkboxes]
+        return states_before, states_after
+    
+
 class ContextMenuPage(BasePage):
     locators = ContextMenuPageLocators()
     
@@ -92,3 +105,33 @@ class ContextMenuPage(BasePage):
         self.action_right_click(self.find_is_visible(self.locators.CONTENT_BOX))
 
         return self.click_and_handle_alert()
+
+class DigestAuthPage(BasePage):
+    locators = DigestAuthPageLocators()
+    def digest_auth_api(self, username: str, password: str):
+        response = requests.get(
+            self.url,
+            auth=HTTPDigestAuth(username, password),
+            timeout=10,
+        )
+        return response
+    
+class DisappearingElementsPage(BasePage):
+    locators = DisappearingElementsPageLocators()
+
+    def get_menu_item_text(self):
+        elements = self.find_are_visible(self.locators.MENU_ITEMS)
+        return [item.text for item in elements]
+    
+    def disappearing_menu(self):
+        first_state = self.get_menu_item_text()
+        changed = False
+
+        for _ in range(5):
+            self.driver.refresh()
+
+            current_state = self.get_menu_item_text()
+            if current_state != first_state:
+                changed = True
+                break
+        return changed
