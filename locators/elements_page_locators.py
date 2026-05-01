@@ -34,3 +34,19 @@ class DigestAuthPageLocators:
 
 class DisappearingElementsPageLocators:
     MENU_ITEMS = (By.CSS_SELECTOR, 'div[id="content"] a')
+
+class DragAndDropPageLocators:
+    DRAG_AND_DROP_ELEMENTS = (By.XPATH, '//div[@id="columns"]//div')
+
+class DropdownPageLocators:
+    DROPDOWN = (By.CSS_SELECTOR, 'select[id="dropdown"]')
+
+class DynamicContentPageLocators:
+    CONTENT_TEXTS = (By.XPATH, '//div[@id="content"]//div[@class="large-10 columns"]')
+
+class DynamicControlsPageLocators:
+    CHECKBOX = (By.CSS_SELECTOR, '#checkbox')
+    REMOVE_ADD_BUTTON = (By.CSS_SELECTOR, '#checkbox-example button')
+    ENABLE_DISABLE_BUTTON = (By.CSS_SELECTOR, '#input-example button')
+    INPUT_FIELD = (By.CSS_SELECTOR, '#input-example input[type="text"]')
+    MESSAGE = (By.ID, 'message')

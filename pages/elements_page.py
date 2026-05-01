@@ -1,9 +1,12 @@
 
 import requests
 from requests.auth import HTTPDigestAuth
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait as wait
+
 import random
 
-from locators.elements_page_locators import AddRemoveElementsPageLocators, BasicAuthPageLocators, BrokenImagesPageLocators, ChallengingDomPageLocators, CheckboxesPageLocators, ContextMenuPageLocators, DigestAuthPageLocators, DisappearingElementsPageLocators, ElementsPageLocators
+from locators.elements_page_locators import AddRemoveElementsPageLocators, BasicAuthPageLocators, BrokenImagesPageLocators, ChallengingDomPageLocators, CheckboxesPageLocators, ContextMenuPageLocators, DigestAuthPageLocators, DisappearingElementsPageLocators, DragAndDropPageLocators, DropdownPageLocators, DynamicContentPageLocators, DynamicControlsPageLocators, ElementsPageLocators
 from pages.base_page import BasePage
 
 
@@ -135,3 +138,102 @@ class DisappearingElementsPage(BasePage):
                 changed = True
                 break
         return changed
+    
+class DragAndDropPage(BasePage):
+    locators = DragAndDropPageLocators()
+
+    def get_column_headers(self):
+        header_a_and_b = self.find_are_visible(self.locators.DRAG_AND_DROP_ELEMENTS)
+        headers = [header.text for header in header_a_and_b]
+        return headers
+
+    def swap_elements(self):
+        state_before = self.get_column_headers()
+        colums = self.find_are_visible(self.locators.DRAG_AND_DROP_ELEMENTS)
+        colum_first = colums[0]
+        colums_second = colums[1]
+        self.action_drag_and_drop_to_element(colum_first, colums_second)
+        state_after = self.get_column_headers()
+        return state_before, state_after
+
+class DropdownPage(BasePage):
+    locators = DropdownPageLocators()
+    
+    def get_dropdown(self):
+        return Select(self.find_is_visible(self.locators.DROPDOWN))
+
+    def select_option_by_text(self, text):
+        self.get_dropdown().select_by_visible_text(text)
+        return text
+
+    def get_selected_option_text(self):
+        return self.get_dropdown().first_selected_option.text
+    
+class DynamicContentPage(BasePage):
+    locators = DynamicContentPageLocators()
+    def get_content_text(self):
+        elements = self.find_are_present(self.locators.CONTENT_TEXTS)
+        return [element.text.strip() for element in elements]
+    
+    def refresh_page(self):
+        self.driver.refresh()
+
+class DynamicControlsPage(BasePage):
+    locators = DynamicControlsPageLocators()
+
+    def wait_for_message(self, expected_text, timeout=10):
+        def message_text(driver):
+            text = driver.find_element(*self.locators.MESSAGE).text.strip()
+            return text if text == expected_text else False
+
+        return wait(self.driver, timeout).until(message_text)
+
+    def wait_for_input_state(self, enabled, timeout=10):
+        def input_state(driver):
+            input_field = driver.find_element(*self.locators.INPUT_FIELD)
+            return input_field if input_field.is_enabled() == enabled else False
+
+        return wait(self.driver, timeout).until(input_state)
+
+    def remove_checkbox(self):
+        self.find_is_clickable(self.locators.REMOVE_ADD_BUTTON).click()
+        self.find_is_invisible(self.locators.CHECKBOX)
+        return self.wait_for_message("It's gone!")
+
+    def add_checkbox(self):
+        self.find_is_clickable(self.locators.REMOVE_ADD_BUTTON).click()
+        self.find_is_visible(self.locators.CHECKBOX)
+        return self.wait_for_message("It's back!")
+
+    def appears_disappers_checkbox(self):
+        removed_message = self.remove_checkbox()
+        added_message = self.add_checkbox()
+        return removed_message, added_message
+
+    def enable_input(self):
+        self.find_is_clickable(self.locators.ENABLE_DISABLE_BUTTON).click()
+        input_field = self.wait_for_input_state(True)
+        message = self.wait_for_message("It's enabled!")
+        return input_field, message
+
+    def disable_input(self):
+        self.find_is_clickable(self.locators.ENABLE_DISABLE_BUTTON).click()
+        input_field = self.wait_for_input_state(False)
+        message = self.wait_for_message("It's disabled!")
+        return input_field, message
+
+    def check_input(self, text="Hello world"):
+        input_field, enable_message = self.enable_input()
+        input_field.clear()
+        input_field.send_keys(text)
+        entered_text = input_field.get_attribute("value")
+
+        input_field, disable_message = self.disable_input()
+        is_disabled = not input_field.is_enabled()
+
+        return {
+            "enable_message": enable_message,
+            "entered_text": entered_text,
+            "disable_message": disable_message,
+            "is_disabled": is_disabled,
+        }

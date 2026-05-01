@@ -1,7 +1,8 @@
-from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, CheckboxesPage, ContextMenuPage, DigestAuthPage, DisappearingElementsPage, ElementsPage
+from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, CheckboxesPage, ContextMenuPage, DigestAuthPage, DisappearingElementsPage, DragAndDropPage, DropdownPage, DynamicContentPage, DynamicControlsPage, ElementsPage
 
 import time
 
+import random
 import requests
 from requests.auth import HTTPDigestAuth
 class TestElementsPage:
@@ -96,3 +97,85 @@ class TestElementsPage:
 
             state = page.disappearing_menu()
             assert state, 'The menu items will not change after the page is refreshed'
+
+    class TestDragAndDropPage:
+        def test_drag_and_drop(self, driver):
+            page = DragAndDropPage(driver, 'https://the-internet.herokuapp.com/drag_and_drop')
+            page.open()
+            before, after = page.swap_elements()
+
+            assert before != after, (
+                f"Expected columns order to change after drag and drop, "
+                f"but before={before}, after={after}"
+            )
+    
+    class TestDropdownPage:
+        
+        def test_select_option(self, driver):
+            page = DropdownPage(driver, "https://the-internet.herokuapp.com/dropdown")
+            page.open()
+            text = ['Option 1', 'Option 2']
+            choice_option = page.select_option_by_text(random.choice(text))
+            selected_option = page.get_selected_option_text()
+            assert selected_option == choice_option, (
+                f"Expected selected option to be 'Option 1', but got '{selected_option}'"
+            )
+    
+    class TestDynamicContentPage:
+        def test_dynamic_content_changes_after_refresh(self, driver):
+            page = DynamicContentPage(driver, 'https://the-internet.herokuapp.com/dynamic_content')
+            page.open()
+            before_content = page.get_content_text()
+            page.refresh_page()
+            after_content = page.get_content_text()
+
+            assert before_content != after_content, (
+                f"Expected dynamic content to change after refresh, but before={before_content}, after={after_content}"
+            )
+        
+        def test_static_content_does_not_change_after_refresh(self, driver):
+            page = DynamicContentPage(driver, 'https://the-internet.herokuapp.com/dynamic_content?with_content=static')
+            page.open()
+            before_content = page.get_content_text()
+            page.refresh_page()
+            after_content = page.get_content_text()
+
+            some_blocks = sum(
+                1 for before, after in zip(before_content, after_content) if before == after
+            )
+            assert some_blocks >= 1, (
+                f"Expected at least one content block to remain static after refresh, "
+                f"but before={before_content}, after={after_content}"
+            )
+
+    class TestDynamicControlsPage:
+        def test_checkbox(self, driver):
+            page = DynamicControlsPage(driver, 'https://the-internet.herokuapp.com/dynamic_controls')
+            page.open()
+    
+            removed_message, added_message = page.appears_disappers_checkbox()
+    
+            assert removed_message == "It's gone!", (
+                f"Expected message \"It's gone!\", but got '{removed_message}'"
+            )
+            assert added_message == "It's back!", (
+                f"Expected message \"It's back!\", but got '{added_message}'"
+            )
+    
+        def test_input(self, driver):
+            page = DynamicControlsPage(driver, 'https://the-internet.herokuapp.com/dynamic_controls')
+            page.open()
+    
+            result = page.check_input("Selenium")
+    
+            assert result["enable_message"] == "It's enabled!", (
+                f"Expected enable message, but got '{result['enable_message']}'"
+            )
+            assert result["entered_text"] == "Selenium", (
+                f"Expected input value 'Selenium', but got '{result['entered_text']}'"
+            )
+            assert result["disable_message"] == "It's disabled!", (
+                f"Expected disable message, but got '{result['disable_message']}'"
+            )
+            assert result["is_disabled"] is True, "Expected input to be disabled after clicking Disable"
+    
