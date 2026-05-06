@@ -1,4 +1,4 @@
-from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, CheckboxesPage, ContextMenuPage, DigestAuthPage, DisappearingElementsPage, DragAndDropPage, DropdownPage, DynamicContentPage, DynamicControlsPage, ElementsPage
+from pages.elements_page import AddRemoveElementsPage, BasicAuthPage, BrokenImagesPage, ChallengingDomPage, CheckboxesPage, ContextMenuPage, DigestAuthPage, DisappearingElementsPage, DownloadPage, DragAndDropPage, DropdownPage, DynamicContentPage, DynamicControlsPage, DynamicLoadingPage, ElementsPage, EntryAdPage, ExitIntentPage, FloatingMenuPage, ForgotPasswordPage, FramesPage, LoginPage, UploadPage
 
 import time
 
@@ -178,4 +178,232 @@ class TestElementsPage:
                 f"Expected disable message, but got '{result['disable_message']}'"
             )
             assert result["is_disabled"] is True, "Expected input to be disabled after clicking Disable"
-    
+
+    class TestDynamicLoadingPage:
+        def test_exaple_1(self, driver):
+            page = DynamicLoadingPage(driver, 'https://the-internet.herokuapp.com/dynamic_loading')
+            page.open()
+            result = page.start_exaples(0)
+            assert result == "Hello World!", (
+                f"Expected 'Hello World!', but got '{result}'"
+            )
+
+        def test_exaple_2(self, driver):
+            page = DynamicLoadingPage(driver, 'https://the-internet.herokuapp.com/dynamic_loading')
+            page.open()
+            result = page.start_exaples(1)
+            assert result == "Hello World!", (
+                f"Expected 'Hello World!', but got '{result}'"
+            )
+
+    class TestEntryAdPage:
+        def test_entry_ad_modal_is_displayed(self, driver):
+            page = EntryAdPage(driver, "https://the-internet.herokuapp.com/entry_ad")
+            page.open()
+
+            assert page.is_modal_vivsible() is True, "Expected modal window to be visible"
+
+        def test_entry_ad_modal_can_be_closed(self, driver):
+            page = EntryAdPage(driver, "https://the-internet.herokuapp.com/entry_ad")
+            page.open()
+            is_closed = page.close_modal_if_visible()
+
+            assert is_closed is True, "Expected modal window to be closed"
+
+        def test_entry_ad_modal_content(self, driver):
+            page = EntryAdPage(driver, "https://the-internet.herokuapp.com/entry_ad")
+            page.open()
+
+            modal_title = page.restart_ad()
+            assert modal_title.lower() == "this is a modal window", (
+            f"Expected modal title 'This is a modal window', but got '{modal_title}'"
+        )
+            
+    class TestExitIntentPage:
+        def test_exit_intent_modal_content(self, driver):
+            page = ExitIntentPage(driver, 'https://the-internet.herokuapp.com/exit_intent')
+            page.open()
+
+            is_visible = page.trigger_exit_intent()
+            modal_title = page.get_modal_title()
+
+            is_invisible = page.close_modal()
+            
+            assert is_visible is True, "Expected exit intent modal to be visible"
+            assert modal_title == "this is a modal window", (
+                f"Expected modal title 'THIS IS A MODAL WINDOW', but got '{modal_title}'"
+            )
+            assert is_invisible is True, "Expected modal window to be invisible after clicking Close"
+
+    class TestDownloadPage:
+
+        def test_file_can_be_downloaded(self, driver, download_dir):
+            page = DownloadPage(
+                driver,
+                "https://the-internet.herokuapp.com/download",
+                download_dir
+            )
+            page.open()
+
+            expected_file_name, file_path, downloaded_file_name, file_size = page.download_random_file()
+            print(expected_file_name, file_path, downloaded_file_name, file_size)
+
+            assert downloaded_file_name == expected_file_name, (
+                f"Expected downloaded file name '{expected_file_name}', "
+                f"but got '{downloaded_file_name}'"
+            )
+
+            assert file_size > 0, (
+                f"Expected downloaded file '{downloaded_file_name}' to be not empty"
+            )
+
+            assert page.delete_downloaded_file(file_path) is True, (
+                f"Expected downloaded file '{downloaded_file_name}' to be deleted"
+            )
+
+    class TestUploadPage:
+
+        def test_file_can_be_uploaded(self, driver, download_dir):
+            page = UploadPage(driver, "https://the-internet.herokuapp.com/upload")
+            page.open()
+
+            file_path = download_dir / "upload_test_file.txt"
+            file_path.write_text("This file is used for upload testing.", encoding="utf-8")
+            print(file_path)
+            success_header, uploaded_file_name = page.upload_and_get_result(file_path)
+
+            assert success_header == "File Uploaded!", (
+                f"Expected success header 'File Uploaded!', but got '{success_header}'"
+            )
+
+            assert uploaded_file_name == file_path.name, (
+                f"Expected uploaded file name '{file_path.name}', but got '{uploaded_file_name}'"
+            )
+
+    class TestFloatingMenuPage:
+
+        def test_floating_menu(self, driver):
+            page = FloatingMenuPage(driver, "https://the-internet.herokuapp.com/floating_menu")
+            page.open()
+
+            result = page.check_floating_menu("News")
+            time.sleep(6)
+            assert result["menu_items"] == ["Home", "News", "Contact", "About"], (
+                f"Expected menu items ['Home', 'News', 'Contact', 'About'], "
+                f"but got {result['menu_items']}"
+            )
+
+            assert result["is_visible_after_scroll"] is True, (
+                "Expected floating menu to remain visible after scroll"
+            )
+
+            assert abs(result["top_after_scroll"]) < 10, (
+                f"Expected menu to stay near the top of viewport after scroll, "
+                f"but got top={result['top_after_scroll']}"
+            )
+
+            assert result["top_after_scroll"] < result["top_before_scroll"], (
+                f"Expected menu to move closer to the top after scroll, "
+                f"but before={result['top_before_scroll']}, after={result['top_after_scroll']}"
+            )
+
+            assert "#news" in result["current_url"].lower(), (
+                f"Expected URL to contain '#news' after clicking News, "
+                f"but got '{result['current_url']}'"
+            )
+
+
+    class TestForgotPasswordPage:
+
+        def test_forgot_password(self, driver):
+            page = ForgotPasswordPage(driver, "https://the-internet.herokuapp.com/forgot_password")
+            page.open()
+
+            email = "test@example.com"
+
+            assert page.get_title() == "Forgot Password", (
+                f"Expected page title 'Forgot Password', but got '{page.get_title()}'"
+            )
+
+            result = page.submit_email(email)
+
+            assert result["entered_email"] == email, (
+                f"Expected entered email '{email}', but got '{result['entered_email']}'"
+            )
+
+            assert result["result_header"] == "Internal Server Error", (
+                f"Expected result header 'Internal Server Error', but got '{result['result_header']}'"
+            )
+            
+
+    class TestLoginPage:
+
+        def test_login_success(self, driver):
+            page = LoginPage(driver, "https://the-internet.herokuapp.com/login")
+            page.open()
+
+            assert page.get_title() == "Login Page", (
+                f"Expected page title 'Login Page', but got '{page.get_title()}'"
+            )
+
+            result = page.successful_login("tomsmith", "SuperSecretPassword!")
+
+            assert "/secure" in result["current_url"], (
+                f"Expected URL to contain '/secure', but got '{result['current_url']}'"
+            )
+
+            assert result["secure_area_title"] == "Secure Area", (
+                f"Expected secure area title 'Secure Area', but got '{result['secure_area_title']}'"
+            )
+
+            assert "You logged into a secure area!" in result["flash_message"], (
+                f"Expected success flash message, but got '{result['flash_message']}'"
+            )
+
+        def test_login_invalid_password(self, driver):
+            page = LoginPage(driver, "https://the-internet.herokuapp.com/login")
+            page.open()
+
+            result = page.login("tomsmith", "wrong_password")
+
+            assert "/login" in result["current_url"], (
+                f"Expected to stay on login page, but got '{result['current_url']}'"
+            )
+
+            assert "Your password is invalid!" in result["flash_message"], (
+                f"Expected invalid password message, but got '{result['flash_message']}'"
+            )
+            
+    class TestFramesPage:
+
+        def test_nested_frames(self, driver):
+            page = FramesPage(driver, "https://the-internet.herokuapp.com/frames")
+            page.open()
+
+            assert page.get_title() == "Frames", (
+                f"Expected page title 'Frames', but got '{page.get_title()}'"
+            )
+
+            assert page.get_frame_links_text() == ["Nested Frames", "iFrame"], (
+                f"Expected links ['Nested Frames', 'iFrame'], but got {page.get_frame_links_text()}"
+            )
+
+            result = page.get_nested_frames_text()
+
+            assert result == {
+                "left": "LEFT",
+                "middle": "MIDDLE",
+                "right": "RIGHT",
+                "bottom": "BOTTOM",
+            }, f"Expected nested frame texts to match, but got {result}"
+
+        def test_iframe_editor(self, driver):
+            page = FramesPage(driver, "https://the-internet.herokuapp.com/frames")
+            page.open()
+
+            text = "Hello from Selenium"
+            entered_text = page.edit_iframe_text(text)
+            assert entered_text == text, (
+                f"Expected iframe text '{text}', but got '{entered_text}'"
+            )
+
